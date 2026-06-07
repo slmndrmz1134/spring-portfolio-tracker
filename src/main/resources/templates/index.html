@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Portföy Takipçisi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+        .navbar { background: #1a1a2e; color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .navbar h1 { font-size: 20px; }
+        .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
+        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h2 { margin-bottom: 16px; font-size: 18px; color: #1a1a2e; }
+        
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .summary-box { background: #1a1a2e; color: white; border-radius: 12px; padding: 20px; text-align: center; }
+        .summary-box .val { font-size: 22px; font-weight: bold; color: #4ecca3; margin-top: 6px; }
+        .summary-box .lbl { font-size: 12px; color: #aaa; }
+        .positive { color: #22c55e; font-weight: 500; }
+        .negative { color: #ef4444; font-weight: 500; }
+
+        .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .portfolio-card { background: #1a1a2e; color: white; border-radius: 12px; padding: 20px; cursor: pointer; text-decoration: none; transition: transform 0.2s; }
+        .portfolio-card:hover { transform: translateY(-4px); }
+        .portfolio-card h3 { font-size: 16px; margin-bottom: 8px; }
+        .portfolio-card .value { font-size: 24px; font-weight: bold; color: #4ecca3; }
+        .portfolio-card .label { font-size: 12px; color: #aaa; margin-top: 4px; }
+        .form-row { display: flex; gap: 12px; }
+        .form-row input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .btn { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn:hover { background: #16213e; }
+        .empty { text-align: center; color: #aaa; padding: 40px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <h1>📈 Portföy Takipçisi</h1>
+</nav>
+
+<div class="container">
+
+    <!-- Toplam Portföy Özeti -->
+    <div class="summary">
+        <div class="summary-box">
+            <div class="lbl">Toplam Portföy Büyüklüğü</div>
+            <div class="val" th:text="${#numbers.formatDecimal(grandTotalValue, 1, 2) + ' ₺'}">0 ₺</div>
+        </div>
+        <div class="summary-box">
+            <div class="lbl">Portföy Sayısı</div>
+            <div class="val" th:text="${portfolios.size()}">0</div>
+        </div>
+        <div class="summary-box">
+            <div class="lbl">Toplam Kar/Zarar</div>
+            <div class="val">
+                <span th:class="${grandTotalProfitLoss > 0 ? 'positive' : (grandTotalProfitLoss < 0 ? 'negative' : '')}"
+                      th:text="${(grandTotalProfitLoss > 0 ? '+' : '') + #numbers.formatDecimal(grandTotalProfitLoss, 1, 2) + ' ₺'}">0 ₺</span>
+                <span th:class="${grandTotalProfitLoss > 0 ? 'positive' : (grandTotalProfitLoss < 0 ? 'negative' : '')}"
+                      th:text="${'(' + (profitLossPercentage > 0 ? '+' : '') + #numbers.formatDecimal(profitLossPercentage, 1, 2) + '%)'}"
+                      style="font-size: 14px; margin-left: 4px;">(%0)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni portföy oluşturma formu -->
+    <div class="card">
+        <h2>Yeni Portföy Oluştur</h2>
+        <form th:action="@{/portfolio/create}" method="post">
+            <div class="form-row">
+                <input type="text" name="name" placeholder="Portföy adı (örn: Ana Portföyüm)" required>
+                <button type="submit" class="btn">Oluştur</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Portföy listesi -->
+    <div class="card">
+        <h2>Portföylerim</h2>
+        <div class="portfolio-grid" th:if="${!portfolios.isEmpty()}">
+            <a th:each="portfolio : ${portfolios}"
+               th:href="@{/portfolio/{id}(id=${portfolio.id})}"
+               class="portfolio-card">
+                <h3 th:text="${portfolio.name}">Portföy Adı</h3>
+                <div class="value" th:text="${#numbers.formatDecimal(totalValues[portfolio.id], 1, 2) + ' ₺'}">0 ₺</div>
+                
+                <div th:if="${portfolioProfitLosses.containsKey(portfolio.id) && portfolioPercentages.containsKey(portfolio.id)}"
+                     style="font-size: 13px; margin-top: 6px; font-weight: 500;"
+                     th:classappend="${portfolioProfitLosses[portfolio.id] >= 0 ? 'positive' : 'negative'}">
+                    <span th:text="${(portfolioProfitLosses[portfolio.id] >= 0 ? '+' : '') + #numbers.formatDecimal(portfolioProfitLosses[portfolio.id], 1, 2) + ' ₺'}"></span>
+                    <span th:text="'(' + ${portfolioPercentages[portfolio.id] >= 0 ? '+' : ''} + ${#numbers.formatDecimal(portfolioPercentages[portfolio.id], 1, 2)} + '%)'"></span>
+                </div>
+                
+                <div class="label" style="margin-top: 8px;" th:text="${portfolio.assets.size() + ' varlık'}">0 varlık</div>
+            </a>
+        </div>
+        <div class="empty" th:if="${portfolios.isEmpty()}">
+            Henüz portföy yok. Yukarıdan oluşturabilirsin.
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
