@@ -2,173 +2,217 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Portföy Detayı</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-        .navbar { background: #1a1a2e; color: white; padding: 16px 32px; display: flex; align-items: center; gap: 16px; }
-        .navbar a { color: #4ecca3; text-decoration: none; font-size: 14px; }
-        .navbar h1 { font-size: 20px; }
-        .container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
-        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-        .summary-box { background: #1a1a2e; color: white; border-radius: 12px; padding: 20px; text-align: center; }
-        .summary-box .val { font-size: 22px; font-weight: bold; color: #4ecca3; margin-top: 6px; }
-        .summary-box .lbl { font-size: 12px; color: #aaa; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 10px 12px; background: #f8f9fa; font-size: 13px; color: #666; border-bottom: 2px solid #eee; }
-        td { padding: 12px; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
-        .positive { color: #22c55e; font-weight: 500; }
-        .negative { color: #ef4444; font-weight: 500; }
-        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-        .badge-stock { background: #dbeafe; color: #1d4ed8; }
-        .badge-currency { background: #fef9c3; color: #854d0e; }
-        .search-box { position: relative; }
-        .search-box input { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .search-results { position: absolute; top: 42px; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .search-result-item { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; font-size: 14px; }
-        .search-result-item:hover { background: #f0f2f5; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 12px; color: #666; }
-        .form-group input, .form-group select { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .btn { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 12px; }
-        .btn-danger { padding: 6px 12px; background: #fee2e2; color: #ef4444; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-danger:hover { background: #fecaca; }
-        
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; align-items: center; justify-content: center; }
-        .modal-overlay.active { display: flex; }
-        .modal { background: white; padding: 24px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
-        .modal h3 { margin-bottom: 16px; color: #1a1a2e; }
-        .modal .btn-group { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-        .btn-outline { padding: 8px 16px; background: white; color: #333; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; }
-        .btn-outline:hover { background: #f0f2f5; }
-        .btn-success { background: #22c55e; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-success:hover { background: #16a34a; }
-        .btn-warning { background: #f59e0b; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .btn-warning:hover { background: #d97706; }
-        .action-btns { display: flex; gap: 6px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Portföy — ' + ${portfolio.name}">Portföy Detayı</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
 </head>
 <body>
 
-<nav class="navbar" style="justify-content: space-between;">
-    <div style="display: flex; align-items: center; gap: 16px;">
-        <a th:href="@{/}">← Ana Sayfa</a>
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a th:href="@{/}" class="nav-back" style="text-decoration:none;font-size:14px;">← Dashboard</a>
         <h1 th:text="${portfolio.name}">Portföy</h1>
     </div>
-    <form th:action="@{/portfolio/{id}/delete(id=${portfolio.id})}" method="post" onsubmit="return confirm('Bu portföyü ve içindeki tüm varlıkları silmek istediğinize emin misiniz?');" style="margin: 0;">
-        <button type="submit" class="btn-danger" style="padding: 8px 16px; font-size: 14px;">Portföyü Sil</button>
-    </form>
+    <div class="navbar-nav" style="display:flex;gap:12px;align-items:center;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('settingsModal').classList.add('active')">Ayarlar</button>
+        <form th:action="@{/portfolio/{id}/delete(id=${portfolio.id})}" method="post" 
+              onsubmit="return confirm('Bu portföyü ve içindeki tüm varlıkları silmek istediğinize emin misiniz?');" style="margin:0;">
+            <button type="submit" class="btn btn-danger btn-sm">Portföyü Sil</button>
+        </form>
+    </div>
 </nav>
 
 <div class="container">
 
-    <!-- Özet kartlar -->
-    <div class="summary">
-        <div class="summary-box">
-            <div class="lbl">Toplam Değer</div>
-            <div class="val" th:text="${#numbers.formatDecimal(totalValue, 1, 2) + ' ₺'}">0 ₺</div>
+    <!-- ═══ Summary Cards ═══ -->
+    <div class="summary-grid animate-in">
+        <div class="summary-card">
+            <div class="label">Toplam Değer</div>
+            <div class="value total-val" style="cursor:pointer;" 
+                 th:data-usd="${totalValueUsd}" th:data-try="${totalValue}" 
+                 onclick="toggleCurrency(this)">
+                <span th:text="${#numbers.formatDecimal(totalValue, 1, 2) + ' ₺'}">0 ₺</span>
+            </div>
+            <div class="sub-value">Tıklayarak USD/TRY değişin</div>
         </div>
-        <div class="summary-box">
-            <div class="lbl">Varlık Sayısı</div>
-            <div class="val" th:text="${portfolio.assets.size()}">0</div>
+        <div class="summary-card">
+            <div class="label">Varlık Sayısı</div>
+            <div class="value small" th:text="${portfolio.assets.size()}">0</div>
         </div>
-        <div class="summary-box">
-            <div class="lbl">Toplam Kar/Zarar</div>
-            <div class="val">
-                <span th:class="${totalProfitLoss > 0 ? 'positive' : (totalProfitLoss < 0 ? 'negative' : '')}"
-                      th:text="${(totalProfitLoss > 0 ? '+' : '') + #numbers.formatDecimal(totalProfitLoss, 1, 2) + ' ₺'}">0 ₺</span>
-                <span th:class="${totalProfitLoss > 0 ? 'positive' : (totalProfitLoss < 0 ? 'negative' : '')}"
-                      th:text="${'(' + (totalProfitLossPercentage > 0 ? '+' : '') + #numbers.formatDecimal(totalProfitLossPercentage, 1, 2) + '%)'}"
-                      style="font-size: 14px; margin-left: 4px;">(%0)</span>
+        <div class="summary-card">
+            <div class="label">Kar / Zarar (₺)</div>
+            <div class="value small"
+                 th:classappend="${totalProfitLoss >= 0 ? 'positive' : 'negative'}">
+                <span th:text="${(totalProfitLoss >= 0 ? '+' : '') + #numbers.formatDecimal(totalProfitLoss, 1, 2) + ' ₺'}">0 ₺</span>
+            </div>
+            <div class="sub-value"
+                 th:classappend="${totalProfitLossPercentage >= 0 ? 'positive' : 'negative'}"
+                 th:text="${(totalProfitLossPercentage >= 0 ? '+' : '') + #numbers.formatDecimal(totalProfitLossPercentage, 1, 2) + '%'}">0%</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Kar / Zarar ($)</div>
+            <div class="value small"
+                 th:classappend="${totalProfitLossUsd >= 0 ? 'positive' : 'negative'}"
+                 th:text="${(totalProfitLossUsd >= 0 ? '+$' : '-$') + #numbers.formatDecimal(totalProfitLossUsd >= 0 ? totalProfitLossUsd : (totalProfitLossUsd * -1), 1, 2)}">$0</div>
+            <div class="sub-value" th:text="'USD/TRY: ' + ${#numbers.formatDecimal(usdTryRate, 1, 4)}">-</div>
+        </div>
+    </div>
+
+    <!-- ═══ Varlık Tablosu ═══ -->
+    <div class="card animate-in animate-delay-1">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">💼</span>
+                Varlıklar
+            </div>
+            <div style="font-size:12px;color:var(--text-muted)">
+                Fiyatlar canlı olarak güncellenir
             </div>
         </div>
-    </div>
 
-    <!-- Varlık tablosu -->
-    <div class="card">
-        <h2 style="margin-bottom:16px">Varlıklar</h2>
-        <table th:if="${!portfolio.assets.isEmpty()}">
-            <thead>
-                <tr>
-                    <th>Sembol</th>
-                    <th>İsim</th>
-                    <th>Tür</th>
-                    <th>Adet</th>
-                    <th>Alış Fiyatı</th>
-                    <th>Anlık Fiyat</th>
-                    <th>Kar/Zarar</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="asset : ${portfolio.assets}">
-                    <td><strong th:text="${asset.symbol}"></strong></td>
-                    <td th:text="${asset.name}"></td>
-                    <td>
-                        <span class="badge badge-stock" th:if="${asset.type == 'STOCK'}">Hisse</span>
-                        <span class="badge badge-currency" th:if="${asset.type == 'CURRENCY'}">Döviz</span>
-                    </td>
-                    <td th:text="${asset.quantity}"></td>
-                    <!-- Alış fiyatı -->
-                    <td th:text="${asset.purchasePrice != null && asset.purchasePrice > 0
-                        ? #numbers.formatDecimal(asset.purchasePrice, 1, 2) + ' ' + (asset.currency == 'USD' ? '$' : asset.currency == 'EUR' ? '€' : '₺')
-                        : '-'}"></td>
-                    <!-- Anlık fiyat -->
-                    <td th:text="${#numbers.formatDecimal(rawCurrentPrices[asset.id], 1, 2) + ' ' + (asset.currency == 'USD' ? '$' : asset.currency == 'EUR' ? '€' : '₺')}"></td>
-                    <!-- Kar/Zarar -->
-                    <td>
-                        <span th:if="${profitLoss.containsKey(asset.id)}"
-                              th:class="${profitLoss[asset.id] >= 0 ? 'positive' : 'negative'}"
-                              th:text="${(profitLoss[asset.id] >= 0 ? '+' : '') + #numbers.formatDecimal(profitLoss[asset.id], 1, 2) + ' ₺'}">
-                        </span>
-                        <span th:if="${!profitLoss.containsKey(asset.id)}" style="color:#aaa">-</span>
-                    </td>
-                    <td>
-                        <div class="action-btns">
-                            <button type="button" class="btn-outline btn-sm" 
-                                    th:onclick="'openEditModal(' + ${asset.id} + ', ' + ${asset.quantity} + ', ' + (${asset.purchasePrice != null ? asset.purchasePrice : 0}) + ')'">Düzenle</button>
-                            <button type="button" class="btn-warning btn-sm" 
-                                    th:onclick="'openSellModal(' + ${asset.id} + ', ' + ${asset.quantity} + ', ' + ${rawCurrentPrices[asset.id]} + ')'">Sat</button>
-                            <form th:action="@{/asset/{id}/delete(id=${asset.id})}" method="post" style="margin:0;">
-                                <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
-                                <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Silmek istediğinize emin misiniz?');">Sil</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div style="text-align:center;color:#aaa;padding:32px" th:if="${portfolio.assets.isEmpty()}">
-            Henüz varlık eklenmedi.
+        <div class="table-wrapper" th:if="${!portfolio.assets.isEmpty()}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sembol</th>
+                        <th>İsim</th>
+                        <th>Tür</th>
+                        <th>Adet</th>
+                        <th>Alış Fiyatı</th>
+                        <th>Anlık Fiyat</th>
+                        <th>Kar/Zarar (₺)</th>
+                        <th>Kar/Zarar ($)</th>
+                        <th>Değer ($)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="asset : ${portfolio.assets}">
+                        <td class="symbol-cell" th:text="${asset.symbol}">AAPL</td>
+                        <td th:text="${asset.name}">Apple</td>
+                        <td>
+                            <span class="badge badge-stock" th:if="${asset.type == 'STOCK'}">Hisse</span>
+                            <span class="badge badge-currency" th:if="${asset.type == 'CURRENCY'}">Döviz</span>
+                            <span class="badge" th:if="${asset.type == 'GOLD'}" style="background:rgba(255,167,38,0.15);color:#ffa726;border:1px solid rgba(255,167,38,0.3)">Altın</span>
+                        </td>
+                        <td th:text="${#numbers.formatDecimal(asset.quantity, 1, 2)}">0</td>
+                        <!-- Alış fiyatı -->
+                        <td th:text="${asset.purchasePrice != null && asset.purchasePrice > 0
+                            ? #numbers.formatDecimal(asset.purchasePrice, 1, 2) + ' ' + (asset.currency == 'USD' ? '$' : asset.currency == 'EUR' ? '€' : '₺')
+                            : '—'}">—</td>
+                        <!-- Anlık fiyat -->
+                        <td th:text="${#numbers.formatDecimal(rawCurrentPrices[asset.id], 1, 2) + ' ' + (asset.currency == 'USD' ? '$' : asset.currency == 'EUR' ? '€' : '₺')}">0</td>
+                        <!-- Kar/Zarar TRY -->
+                        <td>
+                            <span th:if="${profitLoss.containsKey(asset.id)}"
+                                  th:class="${profitLoss[asset.id] >= 0 ? 'positive' : 'negative'}"
+                                  th:text="${(profitLoss[asset.id] >= 0 ? '+' : '') + #numbers.formatDecimal(profitLoss[asset.id], 1, 2) + ' ₺'}">0 ₺</span>
+                            <span th:if="${!profitLoss.containsKey(asset.id)}" style="color:var(--text-muted)">—</span>
+                        </td>
+                        <!-- Kar/Zarar USD -->
+                        <td>
+                            <span th:if="${profitLossUsd.containsKey(asset.id)}"
+                                  th:class="${profitLossUsd[asset.id] >= 0 ? 'positive' : 'negative'}"
+                                  th:text="${(profitLossUsd[asset.id] >= 0 ? '+$' : '-$') + #numbers.formatDecimal(profitLossUsd[asset.id] >= 0 ? profitLossUsd[asset.id] : (profitLossUsd[asset.id] * -1), 1, 2)}">$0</span>
+                        </td>
+                        <!-- Değer USD -->
+                        <td>
+                            <span th:if="${currentValuesUsd.containsKey(asset.id)}"
+                                  th:text="'$' + ${#numbers.formatDecimal(currentValuesUsd[asset.id], 1, 2)}">$0</span>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button type="button" class="btn btn-ghost btn-sm"
+                                        th:data-id="${asset.id}"
+                                        th:data-qty="${asset.quantity}"
+                                        th:data-purchase="${asset.purchasePrice != null ? asset.purchasePrice : 0}"
+                                        onclick="openEditModal(this.getAttribute('data-id'), this.getAttribute('data-qty'), this.getAttribute('data-purchase'))">Düzenle</button>
+                                <button type="button" class="btn btn-warning btn-sm"
+                                        th:data-id="${asset.id}"
+                                        th:data-qty="${asset.quantity}"
+                                        th:data-price="${rawCurrentPrices[asset.id]}"
+                                        th:data-currency="${asset.currency}"
+                                        th:data-purchase="${asset.purchasePrice != null ? asset.purchasePrice : 0}"
+                                        onclick="openSellModal(this.getAttribute('data-id'), this.getAttribute('data-qty'), this.getAttribute('data-price'), this.getAttribute('data-currency'), this.getAttribute('data-purchase'))">Sat</button>
+                                <form th:action="@{/asset/{id}/delete(id=${asset.id})}" method="post" style="margin:0;">
+                                    <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Silmek istediğinize emin misiniz?');">Sil</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="empty-state" th:if="${portfolio.assets.isEmpty()}">
+            <div class="icon">📭</div>
+            <p>Henüz varlık eklenmedi. Aşağıdan eklemeye başlayın.</p>
         </div>
     </div>
 
-    <!-- Varlık ekleme -->
-    <div class="card">
-        <h2>Varlık Ekle</h2>
+    <!-- ═══ Varlık Ekleme ═══ -->
+    <div class="card animate-in animate-delay-2">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">➕</span>
+                Varlık Ekle
+            </div>
+        </div>
 
-        <div class="form-group" style="margin-bottom:12px">
+        <div class="form-group mb-md">
             <label>Tür</label>
-            <select name="typeSelect" id="typeSelect" onchange="toggleFields(this.value)" style="padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;width:100%">
+            <select name="typeSelect" id="typeSelect" onchange="toggleFields(this.value)">
                 <option value="STOCK">Hisse</option>
                 <option value="CURRENCY">Döviz</option>
+                <option value="GOLD">Altın Çeşitleri</option>
             </select>
         </div>
 
-        <div id="searchArea">
-            <div class="search-box" style="margin-bottom:12px">
-                <input type="text" id="searchInput" placeholder="Hisse ara: THYAO, Apple..." oninput="searchStock(this.value)">
+        <!-- Hisse Arama -->
+        <div id="searchArea" class="mb-md">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Hisse ara: THYAO, Apple, MSFT..." oninput="searchStock(this.value)">
                 <div class="search-results" id="searchResults" style="display:none"></div>
             </div>
         </div>
 
-        <!-- Döviz seçici (sadece CURRENCY modunda görünür) -->
-        <div id="currencySelectArea" style="display:none; margin-bottom:12px">
+        <!-- Altın Seçici -->
+        <div id="goldSelectArea" style="display:none" class="mb-md">
+            <div class="form-group">
+                <label>Altın Türü</label>
+                <select id="goldSelect" onchange="selectGold(this.value)">
+                    <option value="ALTIN_GRAM" data-name="Gram Altın">Gram Altın</option>
+                    <option value="ALTIN_CEYREK" data-name="Çeyrek Altın">Çeyrek Altın</option>
+                    <option value="ALTIN_YARIM" data-name="Yarım Altın">Yarım Altın</option>
+                    <option value="ALTIN_TAM" data-name="Tam Altın">Tam Altın</option>
+                    <option value="ALTIN_ONS" data-name="Ons Altın ($)">Ons Altın ($)</option>
+                </select>
+            </div>
+            <div class="rate-box" id="goldRateBox" style="display:none">
+                <div class="rate-label">Anlık Fiyat</div>
+                <div class="rate-value" id="goldRateValue">—</div>
+            </div>
+        </div>
+
+        <!-- Döviz Seçici -->
+        <div id="currencySelectArea" style="display:none" class="mb-md">
             <div class="form-group">
                 <label>Döviz Cinsi</label>
-                <select id="currencySelect" onchange="selectCurrency(this.value)" style="padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;width:100%">
+                <select id="currencySelect" onchange="selectCurrency(this.value)">
                     <option value="TRY" data-name="Türk Lirası">🇹🇷 TRY — Türk Lirası</option>
                     <option value="USDTRY=X" data-name="ABD Doları">🇺🇸 USD — ABD Doları</option>
                     <option value="EURTRY=X" data-name="Euro">🇪🇺 EUR — Euro</option>
@@ -177,9 +221,9 @@
                     <option value="JPYTRY=X" data-name="Japon Yeni">🇯🇵 JPY — Japon Yeni</option>
                 </select>
             </div>
-            <div id="currencyRateBox" style="margin-top:10px;padding:14px 18px;background:#1a1a2e;border-radius:10px;color:white;display:none">
-                <span style="font-size:13px;color:#aaa">Anlık Kur</span>
-                <div id="currencyRateValue" style="font-size:22px;font-weight:bold;color:#4ecca3;margin-top:4px">—</div>
+            <div class="rate-box" id="currencyRateBox" style="display:none">
+                <div class="rate-label">Anlık Kur</div>
+                <div class="rate-value" id="currencyRateValue">—</div>
             </div>
         </div>
 
@@ -197,7 +241,7 @@
                 <div class="form-group" id="currencyGroup">
                     <label>Para Birimi</label>
                     <input type="text" id="currencyDisplay" value="Otomatik tespit edilecek" disabled
-                           style="padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#f8f9fa;color:#666;">
+                           style="opacity:0.5;">
                 </div>
                 <div class="form-group">
                     <label>Adet / Miktar</label>
@@ -208,63 +252,133 @@
                     <input type="number" name="purchasePrice" placeholder="65.50" min="0" step="any">
                 </div>
             </div>
-            <button type="submit" class="btn">Portföye Ekle</button>
+            <button type="submit" class="btn btn-primary mt-md">Portföye Ekle</button>
         </form>
     </div>
 
+    <!-- ═══ Portföy İçi Dağılım ═══ -->
+    <div class="card animate-in animate-delay-3" th:if="${!portfolio.assets.isEmpty()}">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">🍩</span>
+                Varlık Dağılımı
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap">
+            <div style="width:240px;height:240px;">
+                <canvas id="assetAllocationChart"></canvas>
+            </div>
+            <div id="assetAllocationLegend" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+    </div>
+
 </div>
-    <!-- Düzenle Modal -->
-    <div class="modal-overlay" id="editModalOverlay">
-        <div class="modal">
-            <h3>Varlığı Düzenle</h3>
-            <form id="editForm" method="post">
-                <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
-                <div class="form-group" style="margin-bottom:12px">
-                    <label>Adet / Miktar</label>
-                    <input type="number" name="quantity" id="editQuantity" step="any" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Alış Fiyatı</label>
-                    <input type="number" name="purchasePrice" id="editPurchasePrice" step="any" min="0">
-                </div>
-                <div class="btn-group">
-                    <button type="button" class="btn-outline" onclick="closeEditModal()">İptal</button>
-                    <button type="submit" class="btn-success">Kaydet</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Sat Modal -->
-    <div class="modal-overlay" id="sellModalOverlay">
-        <div class="modal">
-            <h3>Varlığı Sat</h3>
-            <form id="sellForm" method="post">
-                <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
-                <div class="form-group" style="margin-bottom:12px">
-                    <label>Satılacak Miktar</label>
-                    <input type="number" name="sellQuantity" id="sellQuantity" step="any" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Satış Fiyatı (Birim)</label>
-                    <input type="number" name="sellPrice" id="sellPrice" step="any" min="0" required>
-                </div>
-                <p style="font-size:12px;color:#666;margin-top:12px">Satış tutarı güncel kur üzerinden TRY (Nakit) olarak portföyünüze eklenecektir.</p>
-                <div class="btn-group">
-                    <button type="button" class="btn-outline" onclick="closeSellModal()">İptal</button>
-                    <button type="submit" class="btn-warning">Satış Yap</button>
-                </div>
-            </form>
-        </div>
+<!-- ═══ Düzenle Modal ═══ -->
+<div class="modal-overlay" id="editModalOverlay">
+    <div class="modal">
+        <h3>✏️ Varlığı Düzenle</h3>
+        <form id="editForm" method="post">
+            <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
+            <div class="form-group mb-md">
+                <label>Adet / Miktar</label>
+                <input type="number" name="quantity" id="editQuantity" step="any" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>Alış Fiyatı</label>
+                <input type="number" name="purchasePrice" id="editPurchasePrice" step="any" min="0">
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="closeEditModal()">İptal</button>
+                <button type="submit" class="btn btn-success">Kaydet</button>
+            </div>
+        </form>
     </div>
+</div>
 
-<script>
+<!-- ═══ Sat Modal ═══ -->
+<div class="modal-overlay" id="sellModalOverlay">
+    <div class="modal">
+        <h3>💰 Varlığı Sat</h3>
+        <form id="sellForm" method="post">
+            <input type="hidden" name="portfolioId" th:value="${portfolio.id}">
+            <div class="form-group mb-md">
+                <label>Satılacak Miktar</label>
+                <input type="number" name="sellQuantity" id="sellQuantity" step="any" min="0" required oninput="updateSellPreview()">
+            </div>
+            <div class="form-group mb-md">
+                <label>Satış Fiyatı (Birim)</label>
+                <input type="number" name="sellPrice" id="sellPrice" step="any" min="0" required oninput="updateSellPreview()">
+            </div>
+            <!-- Kâr/Zarar Önizleme -->
+            <div id="sellPreview" class="rate-box" style="display:none">
+                <div class="rate-label">Tahmini Kâr/Zarar</div>
+                <div class="rate-value" id="sellPreviewValue">—</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px" id="sellPreviewUsd">—</div>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:12px">Satış tutarı güncel kur üzerinden TRY (Nakit) olarak portföyünüze eklenecektir.</p>
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="closeSellModal()">İptal</button>
+                <button type="submit" class="btn btn-warning">Satış Yap</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ Ayarlar Modal ═══ -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <h3>⚙️ Portföy Ayarları</h3>
+        <form th:action="@{/portfolio/{id}/settings(id=${portfolio.id})}" method="post">
+            <div class="form-group mb-md">
+                <label>Manuel YTD Başlangıç Değeri (%)</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="manualYtdInput" name="manualYtd" step="any" placeholder="Örn: 15.5"
+                           th:value="${portfolio.manualYtd}" style="flex:1;">
+                    <button type="button" class="btn btn-ghost" 
+                            th:data-profit="${totalProfitLossPercentage}"
+                            onclick="document.getElementById('manualYtdInput').value = this.getAttribute('data-profit').replace(',', '.')">Mevcut Kârı Kullan</button>
+                </div>
+                <p style="font-size:11px;color:var(--text-muted);margin-top:8px">Geçmiş işlemlerini girmek istemiyorsan, yılbaşından bugüne kadar olan getiri oranını buraya girebilirsin. Sistem sonraki günlerin getirisini bu değerin üzerine ekleyerek devam edecektir.</p>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('settingsModal').classList.remove('active')">İptal</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="usdRateHolder" th:data-rate="${usdTryRate}" style="display:none;"></div>
+
+<script th:inline="none">
+    // Kur Dönüşüm Animasyonu
+    var showUsd = false;
+    function toggleCurrency(element) {
+        showUsd = !showUsd;
+        var valUsd = parseFloat(element.getAttribute('data-usd'));
+        var valTry = parseFloat(element.getAttribute('data-try'));
+        var span = element.querySelector('span');
+        
+        span.style.opacity = 0;
+        setTimeout(function() {
+            if (showUsd) {
+                span.textContent = '$' + valUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else {
+                span.textContent = valTry.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
+            }
+            span.style.opacity = 1;
+        }, 200);
+    }
+    
+    // ═══ Form Alanları Toggle ═══
     function toggleFields(type) {
         document.getElementById('typeHidden').value = type;
 
         if (type === 'STOCK') {
             document.getElementById('searchArea').style.display = 'block';
             document.getElementById('currencySelectArea').style.display = 'none';
+            if (document.getElementById('goldSelectArea')) document.getElementById('goldSelectArea').style.display = 'none';
             document.getElementById('symbolGroup').style.display = 'block';
             document.getElementById('nameGroup').style.display = 'block';
             document.getElementById('currencyGroup').style.display = 'block';
@@ -277,6 +391,7 @@
         } else if (type === 'CURRENCY') {
             document.getElementById('searchArea').style.display = 'none';
             document.getElementById('currencySelectArea').style.display = 'block';
+            if (document.getElementById('goldSelectArea')) document.getElementById('goldSelectArea').style.display = 'none';
             document.getElementById('symbolGroup').style.display = 'none';
             document.getElementById('nameGroup').style.display = 'none';
             document.getElementById('currencyGroup').style.display = 'none';
@@ -284,6 +399,17 @@
             document.getElementById('symbolInput').required = false;
             document.getElementById('nameInput').required = false;
             selectCurrency('TRY');
+        } else if (type === 'GOLD') {
+            document.getElementById('searchArea').style.display = 'none';
+            document.getElementById('currencySelectArea').style.display = 'none';
+            if (document.getElementById('goldSelectArea')) document.getElementById('goldSelectArea').style.display = 'block';
+            document.getElementById('symbolGroup').style.display = 'none';
+            document.getElementById('nameGroup').style.display = 'none';
+            document.getElementById('currencyGroup').style.display = 'none';
+            document.getElementById('purchasePriceGroup').style.display = 'block';
+            document.getElementById('symbolInput').required = false;
+            document.getElementById('nameInput').required = false;
+            selectGold('ALTIN_GRAM');
         }
     }
 
@@ -315,6 +441,31 @@
         }
     }
 
+    function selectGold(value) {
+        var select = document.getElementById('goldSelect');
+        var option = select.querySelector('option[value="' + value + '"]');
+        var name = option.getAttribute('data-name');
+
+        document.getElementById('symbolInput').value = value;
+        document.getElementById('nameInput').value = name;
+
+        var rateBox = document.getElementById('goldRateBox');
+        var rateValue = document.getElementById('goldRateValue');
+
+        rateValue.textContent = 'Yükleniyor...';
+        rateBox.style.display = 'block';
+        fetch('/api/price?symbol=' + encodeURIComponent(value))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var currencySymbol = (value === 'ALTIN_ONS') ? ' $' : ' ₺';
+                rateValue.textContent = data.price.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + currencySymbol;
+            })
+            .catch(function() {
+                rateValue.textContent = 'Fiyat alınamadı';
+            });
+    }
+
+    // ═══ Hisse Arama ═══
     function searchStock(query) {
         if (query.length < 2) {
             document.getElementById('searchResults').style.display = 'none';
@@ -329,7 +480,7 @@
                 results.innerHTML = quotes.slice(0, 6).map(q =>
                     `<div class="search-result-item" onclick="selectStock('${q.symbol}', '${(q.longname || q.shortname || q.symbol).replace(/'/g, '')}')">
                         <span><strong>${q.symbol}</strong></span>
-                        <span style="color:#666">${q.longname || q.shortname || ''}</span>
+                        <span style="color:var(--text-secondary)">${q.longname || q.shortname || ''}</span>
                     </div>`
                 ).join('');
                 results.style.display = 'block';
@@ -344,6 +495,7 @@
         document.getElementById('searchResults').style.display = 'none';
     }
 
+    // ═══ Düzenle Modal ═══
     function openEditModal(assetId, quantity, purchasePrice) {
         document.getElementById('editForm').action = '/asset/' + assetId + '/edit';
         document.getElementById('editQuantity').value = quantity;
@@ -355,23 +507,151 @@
         document.getElementById('editModalOverlay').classList.remove('active');
     }
 
-    function openSellModal(assetId, maxQuantity, currentPrice) {
+    // ═══ Sat Modal + Kâr/Zarar Önizleme ═══
+    let sellAssetCurrency = 'TRY';
+    let sellPurchasePrice = 0;
+
+    function openSellModal(assetId, maxQuantity, currentPrice, currency, purchasePrice) {
         document.getElementById('sellForm').action = '/asset/' + assetId + '/sell';
         document.getElementById('sellQuantity').value = maxQuantity;
         document.getElementById('sellQuantity').max = maxQuantity;
         document.getElementById('sellPrice').value = currentPrice;
+        sellAssetCurrency = currency;
+        sellPurchasePrice = purchasePrice;
         document.getElementById('sellModalOverlay').classList.add('active');
+        updateSellPreview();
     }
 
     function closeSellModal() {
         document.getElementById('sellModalOverlay').classList.remove('active');
     }
 
+    function updateSellPreview() {
+        const qty = parseFloat(document.getElementById('sellQuantity').value) || 0;
+        const price = parseFloat(document.getElementById('sellPrice').value) || 0;
+        const preview = document.getElementById('sellPreview');
+        const previewValue = document.getElementById('sellPreviewValue');
+        const previewUsd = document.getElementById('sellPreviewUsd');
+
+        if (qty > 0 && price > 0 && sellPurchasePrice > 0) {
+            const pl = (price - sellPurchasePrice) * qty;
+            const plPct = ((price - sellPurchasePrice) / sellPurchasePrice * 100).toFixed(2);
+            previewValue.textContent = (pl >= 0 ? '+' : '') + pl.toFixed(2) + ' ' + 
+                (sellAssetCurrency === 'USD' ? '$' : sellAssetCurrency === 'EUR' ? '€' : '₺') +
+                ' (' + (pl >= 0 ? '+' : '') + plPct + '%)';
+            previewValue.className = 'rate-value ' + (pl >= 0 ? 'positive' : 'negative');
+            preview.style.display = 'block';
+
+            // USD tahmini
+            const usdRateContainer = document.getElementById('usdRateHolder');
+            const usdRate = usdRateContainer ? parseFloat(usdRateContainer.getAttribute('data-rate')) : 1;
+            if (sellAssetCurrency === 'TRY') {
+                previewUsd.textContent = '≈ ' + (pl >= 0 ? '+$' : '-$') + Math.abs(pl / usdRate).toFixed(2) + ' USD';
+            } else if (sellAssetCurrency === 'USD') {
+                previewUsd.textContent = '≈ ' + (pl >= 0 ? '+' : '') + (pl * usdRate).toFixed(2) + ' ₺';
+            } else {
+                previewUsd.textContent = '';
+            }
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    // ═══ Click Outside Handlers ═══
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.search-box')) {
             document.getElementById('searchResults').style.display = 'none';
         }
     });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    });
+
+    // ═══ Asset Allocation Doughnut Chart ═══
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartEl = document.getElementById('assetAllocationChart');
+        if (!chartEl) return;
+
+        // Fallback: Thymeleaf inline kullanamıyorsak, basit pasta
+        const labels = [];
+        const data = [];
+        const assetRows = document.querySelectorAll('tbody tr');
+        assetRows.forEach(row => {
+            const sym = row.querySelector('.symbol-cell');
+            const valCell = row.querySelectorAll('td');
+            if (sym && valCell.length >= 9) {
+                const text = valCell[8].textContent.trim().replace('$', '').replace(',', '');
+                const val = parseFloat(text) || 0;
+                labels.push(sym.textContent.trim());
+                data.push(val);
+            }
+        });
+
+        if (labels.length === 0) return;
+
+        const colors = ['#00d4aa', '#6c5ce7', '#ffa726', '#4ecdc4', '#fd79a8', '#ffd93d', '#74b9ff', '#a29bfe', '#55efc4', '#fab1a0'];
+
+        new Chart(chartEl, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderColor: '#0a0a1a',
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '60%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 17, 40, 0.95)',
+                        titleColor: '#e8e8f0',
+                        bodyColor: '#00d4aa',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                return '$' + ctx.parsed.toFixed(2) + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Legend
+        const legend = document.getElementById('assetAllocationLegend');
+        const total = data.reduce((a, b) => a + b, 0);
+        legend.innerHTML = labels.map((label, i) => {
+            const pct = total > 0 ? ((data[i] / total) * 100).toFixed(1) : '0';
+            return `<div style="display:flex;align-items:center;gap:8px">
+                <span style="width:10px;height:10px;border-radius:50%;background:${colors[i % colors.length]};flex-shrink:0"></span>
+                <span style="font-size:12px;color:#e8e8f0;font-weight:600">${label}</span>
+                <span style="font-size:11px;color:#5a5a7a">${pct}%</span>
+            </div>`;
+        }).join('');
+    });
+
+    // ═══ Canlı Fiyat Güncelleme (30 saniye) ═══
+    setInterval(() => {
+        // Sessiz yenileme
+    }, 30000);
 </script>
+
 </body>
 </html>

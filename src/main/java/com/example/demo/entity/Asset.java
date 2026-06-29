@@ -2,6 +2,7 @@ package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.time.LocalDate;
 
 // Bu sınıf veritabanındaki "asset" tablosunu temsil eder.
 // Her nesne = portföydeki bir varlık (hisse, döviz, nakit)
@@ -26,7 +27,7 @@ public class Asset {
     @Column(nullable = false)
     private String type;
     
- // Para birimi: TRY, USD, EUR
+    // Para birimi: TRY, USD, EUR
     @Column(nullable = false)
     private String currency = "TRY";
 
@@ -36,4 +37,7 @@ public class Asset {
 
     // Kullanıcının aldığı fiyat (maliyet takibi için)
     private Double purchasePrice;
+
+    // Alış tarihi (performans hesaplama için)
+    private LocalDate purchaseDate;
 }

@@ -2,102 +2,519 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Portföy Takipçisi</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
-        .navbar { background: #1a1a2e; color: white; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
-        .navbar h1 { font-size: 20px; }
-        .container { max-width: 900px; margin: 32px auto; padding: 0 16px; }
-        .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .card h2 { margin-bottom: 16px; font-size: 18px; color: #1a1a2e; }
-        
-        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-        .summary-box { background: #1a1a2e; color: white; border-radius: 12px; padding: 20px; text-align: center; }
-        .summary-box .val { font-size: 22px; font-weight: bold; color: #4ecca3; margin-top: 6px; }
-        .summary-box .lbl { font-size: 12px; color: #aaa; }
-        .positive { color: #22c55e; font-weight: 500; }
-        .negative { color: #ef4444; font-weight: 500; }
-
-        .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-        .portfolio-card { background: #1a1a2e; color: white; border-radius: 12px; padding: 20px; cursor: pointer; text-decoration: none; transition: transform 0.2s; }
-        .portfolio-card:hover { transform: translateY(-4px); }
-        .portfolio-card h3 { font-size: 16px; margin-bottom: 8px; }
-        .portfolio-card .value { font-size: 24px; font-weight: bold; color: #4ecca3; }
-        .portfolio-card .label { font-size: 12px; color: #aaa; margin-top: 4px; }
-        .form-row { display: flex; gap: 12px; }
-        .form-row input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .btn { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
-        .btn:hover { background: #16213e; }
-        .empty { text-align: center; color: #aaa; padding: 40px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker Pro — Dashboard</title>
+    <meta name="description" content="Profesyonel bileşik portföy takip sistemi">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
 </head>
 <body>
 
+<!-- Navbar -->
 <nav class="navbar">
-    <h1>📈 Portföy Takipçisi</h1>
+    <div class="navbar-brand">
+        <span class="logo">&#9672;</span>
+        <h1>Portfolio Tracker <span>Pro</span></h1>
+    </div>
+    <div class="navbar-nav">
+        <a href="/" class="active">Dashboard</a>
+        <a th:href="@{/trade-history}">İşlem Geçmişi</a>
+    </div>
 </nav>
 
 <div class="container">
 
-    <!-- Toplam Portföy Özeti -->
-    <div class="summary">
-        <div class="summary-box">
-            <div class="lbl">Toplam Portföy Büyüklüğü</div>
-            <div class="val" th:text="${#numbers.formatDecimal(grandTotalValue, 1, 2) + ' ₺'}">0 ₺</div>
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <!-- Toplam Deger -->
+        <div class="card summary-card animate-in">
+            <div class="card-title">Toplam Portfolyo Degeri</div>
+            <div class="card-value total-val" id="compositeTotalTry" style="cursor:pointer;" 
+                 th:data-usd="${grandTotalValueUsd}" th:data-try="${grandTotalValue}" 
+                 onclick="toggleCurrency(this)">
+                <span th:text="${#numbers.formatDecimal(grandTotalValue, 1, 2) + ' ₺'}">0.00 ₺</span>
+            </div>
+            <div class="card-subtitle">
+                <span class="trend-icon" th:classappend="${dailyChange >= 0 ? 'positive' : 'negative'}">
+                    <span th:text="${dailyChange >= 0 ? '↗' : '↘'}">↗</span>
+                </span>
+            </div>
         </div>
-        <div class="summary-box">
-            <div class="lbl">Portföy Sayısı</div>
-            <div class="val" th:text="${portfolios.size()}">0</div>
+        <div class="summary-card">
+            <div class="label">Bileşik Performans (YTD)</div>
+            <div class="value small"
+                 th:classappend="${compositePerformance >= 0 ? 'positive' : 'negative'}"
+                 th:text="${(compositePerformance >= 0 ? '+' : '') + #numbers.formatDecimal(compositePerformance, 1, 2) + '%'}">0%</div>
+            <div class="sub-value">Agirlikli ortalama</div>
         </div>
-        <div class="summary-box">
-            <div class="lbl">Toplam Kar/Zarar</div>
-            <div class="val">
-                <span th:class="${grandTotalProfitLoss > 0 ? 'positive' : (grandTotalProfitLoss < 0 ? 'negative' : '')}"
-                      th:text="${(grandTotalProfitLoss > 0 ? '+' : '') + #numbers.formatDecimal(grandTotalProfitLoss, 1, 2) + ' ₺'}">0 ₺</span>
-                <span th:class="${grandTotalProfitLoss > 0 ? 'positive' : (grandTotalProfitLoss < 0 ? 'negative' : '')}"
-                      th:text="${'(' + (profitLossPercentage > 0 ? '+' : '') + #numbers.formatDecimal(profitLossPercentage, 1, 2) + '%)'}"
-                      style="font-size: 14px; margin-left: 4px;">(%0)</span>
+        <div class="summary-card">
+            <div class="label">Gunluk Degisim</div>
+            <div class="value small"
+                 th:classappend="${dailyChange >= 0 ? 'positive' : 'negative'}"
+                 th:text="${(dailyChange >= 0 ? '+' : '') + #numbers.formatDecimal(dailyChange, 1, 2) + '%'}">0%</div>
+            <div class="sub-value">Son 24 saat</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Realized P/L</div>
+            <div class="value small"
+                 th:classappend="${realizedPLUsd >= 0 ? 'positive' : 'negative'}"
+                 th:text="${(realizedPLUsd >= 0 ? '+$' : '-$') + #numbers.formatDecimal(realizedPLUsd >= 0 ? realizedPLUsd : realizedPLUsd * -1, 1, 2)}">$0.00</div>
+            <div class="sub-value"
+                 th:text="${(realizedPLTry >= 0 ? '+' : '') + #numbers.formatDecimal(realizedPLTry, 1, 2) + ' TL'}">0 TL</div>
+        </div>
+    </div>
+
+    <!-- Bilesik Performans Grafigi -->
+    <div class="card animate-in animate-delay-1">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">&#128200;</span>
+                Bilesik Portfolyo Performansi
+            </div>
+            <div class="period-selector" id="periodSelector">
+                <button class="period-btn" data-period="1D">1G</button>
+                <button class="period-btn" data-period="1W">1H</button>
+                <button class="period-btn active" data-period="1M">1A</button>
+                <button class="period-btn" data-period="3M">3A</button>
+                <button class="period-btn" data-period="6M">6A</button>
+                <button class="period-btn" data-period="1Y">1Y</button>
+                <button class="period-btn" data-period="YTD">YTD</button>
+                <button class="period-btn" data-period="ALL">Tumu</button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+
+        <!-- Hesap Katkilari -->
+        <div class="breakdown-list" id="breakdownList" th:if="${compositeBreakdown != null and !compositeBreakdown.isEmpty()}">
+            <div class="breakdown-item" th:each="item, stat : ${compositeBreakdown}">
+                <div class="info">
+                    <span class="breakdown-dot"
+                          th:style="${'background:' + (stat.index == 0 ? '#00d4aa' : (stat.index == 1 ? '#6c5ce7' : (stat.index == 2 ? '#ffa726' : '#4ecdc4')))}"></span>
+                    <div>
+                        <div class="breakdown-name" th:text="${item['name']}">Hesap</div>
+                        <div class="breakdown-weight"
+                             th:if="${item['weight'] != null}"
+                             th:text="'Agirlik: %' + ${#numbers.formatDecimal(item['weight'], 1, 1)}">%0</div>
+                    </div>
+                </div>
+                <div class="breakdown-perf"
+                     th:classappend="${item['performance'] >= 0 ? 'positive' : 'negative'}"
+                     th:text="${(item['performance'] >= 0 ? '+' : '') + #numbers.formatDecimal(item['performance'], 1, 2) + '%'}">0%</div>
             </div>
         </div>
     </div>
 
-    <!-- Yeni portföy oluşturma formu -->
-    <div class="card">
-        <h2>Yeni Portföy Oluştur</h2>
-        <form th:action="@{/portfolio/create}" method="post">
-            <div class="form-row">
-                <input type="text" name="name" placeholder="Portföy adı (örn: Ana Portföyüm)" required>
-                <button type="submit" class="btn">Oluştur</button>
+    <!-- Portfolyolerim + Yeni Olustur -->
+    <div class="card animate-in animate-delay-2">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">&#128193;</span>
+                Portfolyolerim
             </div>
-        </form>
-    </div>
+        </div>
 
-    <!-- Portföy listesi -->
-    <div class="card">
-        <h2>Portföylerim</h2>
         <div class="portfolio-grid" th:if="${!portfolios.isEmpty()}">
+            <!-- Dahili Portfolyoler -->
             <a th:each="portfolio : ${portfolios}"
                th:href="@{/portfolio/{id}(id=${portfolio.id})}"
                class="portfolio-card">
-                <h3 th:text="${portfolio.name}">Portföy Adı</h3>
-                <div class="value" th:text="${#numbers.formatDecimal(totalValues[portfolio.id], 1, 2) + ' ₺'}">0 ₺</div>
-                
-                <div th:if="${portfolioProfitLosses.containsKey(portfolio.id) && portfolioPercentages.containsKey(portfolio.id)}"
-                     style="font-size: 13px; margin-top: 6px; font-weight: 500;"
-                     th:classappend="${portfolioProfitLosses[portfolio.id] >= 0 ? 'positive' : 'negative'}">
-                    <span th:text="${(portfolioProfitLosses[portfolio.id] >= 0 ? '+' : '') + #numbers.formatDecimal(portfolioProfitLosses[portfolio.id], 1, 2) + ' ₺'}"></span>
-                    <span th:text="'(' + ${portfolioPercentages[portfolio.id] >= 0 ? '+' : ''} + ${#numbers.formatDecimal(portfolioPercentages[portfolio.id], 1, 2)} + '%)'"></span>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <h3 th:text="${portfolio.name}">Portfolyo Adi</h3>
+                    <span th:if="${portfolio.platform != null and !portfolio.platform.isEmpty()}" class="badge badge-external" th:text="${portfolio.platform}">MIDAS</span>
                 </div>
-                
-                <div class="label" style="margin-top: 8px;" th:text="${portfolio.assets.size() + ' varlık'}">0 varlık</div>
+                <div class="value" th:text="${#numbers.formatDecimal(totalValues[portfolio.id], 1, 0) + ' TL'}">0 TL</div>
+                <div class="usd-value" th:text="'$' + ${#numbers.formatDecimal(totalValuesUsd[portfolio.id], 1, 2)}">$0</div>
+                <div class="pl-info"
+                     th:if="${portfolioProfitLosses.containsKey(portfolio.id)}"
+                     th:classappend="${portfolioProfitLosses[portfolio.id] >= 0 ? 'positive' : 'negative'}">
+                    <span th:text="${(portfolioProfitLosses[portfolio.id] >= 0 ? '+' : '') + #numbers.formatDecimal(portfolioProfitLosses[portfolio.id], 1, 2) + ' TL'}"></span>
+                    <span th:text="${'(' + (portfolioPercentages[portfolio.id] >= 0 ? '+' : '') + #numbers.formatDecimal(portfolioPercentages[portfolio.id], 1, 2) + '%)'}"></span>
+                </div>
+                <div class="asset-count" th:text="${portfolio.assets.size() + ' varlik'}">0 varlik</div>
             </a>
+
+
+            <!-- Yeni Portfolyo Ekle Karti -->
+            <div class="portfolio-card add-card" onclick="document.getElementById('createPortfolioModal').classList.add('active')">
+                <span class="plus">+</span>
+                <span class="add-text">Yeni Portfolyo</span>
+            </div>
         </div>
-        <div class="empty" th:if="${portfolios.isEmpty()}">
-            Henüz portföy yok. Yukarıdan oluşturabilirsin.
+
+        <div class="empty-state" th:if="${portfolios.isEmpty()}">
+            <div class="icon">&#128194;</div>
+            <p>Henuz portfolyo yok.</p>
+            <button class="btn btn-primary mt-md" onclick="document.getElementById('createPortfolioModal').classList.add('active')">Ilk Portfolyonuzu Olusturun</button>
+        </div>
+    </div>
+
+    <!-- En Iyi / En Kotu Performanslar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="animate-in animate-delay-3"
+         th:if="${topPerformers != null and topPerformers['best'] != null and !topPerformers['best'].isEmpty()}">
+
+        <!-- En Iyi -->
+        <div class="card">
+            <div class="card-title mb-md">
+                <span class="icon">&#127942;</span>
+                En Iyi Performans
+            </div>
+            <div th:each="item, stat : ${topPerformers['best']}" class="performer-item">
+                <div class="performer-info">
+                    <span class="performer-rank"
+                          th:classappend="${stat.index == 0 ? 'rank-1' : (stat.index == 1 ? 'rank-2' : 'rank-3')}"
+                          th:text="${stat.index + 1}">1</span>
+                    <span class="performer-symbol" th:text="${item['symbol'].startsWith('ALTIN_') || item['symbol'] == 'GOLD_GRAM_TRY' ? (item['name'] != null && !item['name'].isEmpty() ? item['name'] : 'Gram Altın') : item['symbol']}">AAPL</span>
+                </div>
+                <span class="performer-perf positive" th:text="${'+' + #numbers.formatDecimal(item['performance'], 1, 2) + '%'}">+0%</span>
+            </div>
+        </div>
+
+        <!-- En Kotu -->
+        <div class="card">
+            <div class="card-title mb-md">
+                <span class="icon">&#128201;</span>
+                En Kotu Performans
+            </div>
+            <div th:each="item, stat : ${topPerformers['worst']}" class="performer-item">
+                <div class="performer-info">
+                    <span class="performer-rank" th:text="${stat.index + 1}">1</span>
+                    <span class="performer-symbol" th:text="${item['symbol'].startsWith('ALTIN_') || item['symbol'] == 'GOLD_GRAM_TRY' ? (item['name'] != null && !item['name'].isEmpty() ? item['name'] : 'Gram Altın') : item['symbol']}">THYAO</span>
+                </div>
+                <span class="performer-perf" 
+                      th:classappend="${item['performance'] >= 0 ? 'positive' : 'negative'}" 
+                      th:text="${(item['performance'] >= 0 ? '+' : '') + #numbers.formatDecimal(item['performance'], 1, 2) + '%'}">-0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolyo Dagilimi (Pasta Grafik) -->
+    <div class="card animate-in animate-delay-4"
+         th:if="${!portfolios.isEmpty()}">
+        <div class="card-header">
+            <div class="card-title">
+                <span class="icon">&#127849;</span>
+                Portfolyo Dagilimi
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap">
+            <div style="width:260px;height:260px;">
+                <canvas id="allocationChart"></canvas>
+            </div>
+            <div id="allocationLegend" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
     </div>
 
 </div>
+
+<!-- Portfolyo Olusturma Modal -->
+<div class="modal-overlay" id="createPortfolioModal">
+    <div class="modal">
+        <h3>Yeni Portfolyo Olustur</h3>
+        <form th:action="@{/portfolio/create}" method="post">
+            <div class="form-group mb-md">
+                <label>Portfolyo Adi</label>
+                <input type="text" name="name" placeholder="Orn: Ana Portfolyom, Emeklilik" required="required"/>
+            </div>
+            <div class="form-group mb-md">
+                <label>Platform (Opsiyonel)</label>
+                <input type="text" name="platform" placeholder="Orn: Midas, Akbank, IsCep"/>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('createPortfolioModal').classList.remove('active')">Iptal</button>
+                <button type="submit" class="btn btn-primary">Olustur</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:inline="none">
+    // Kur Dönüşüm Animasyonu
+    var showUsd = false;
+    function toggleCurrency(element) {
+        showUsd = !showUsd;
+        var valUsd = parseFloat(element.getAttribute('data-usd'));
+        var valTry = parseFloat(element.getAttribute('data-try'));
+        var span = element.querySelector('span');
+        
+        span.style.opacity = 0;
+        setTimeout(function() {
+            if (showUsd) {
+                span.textContent = '$' + valUsd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else {
+                span.textContent = valTry.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₺';
+            }
+            span.style.opacity = 1;
+        }, 200);
+    }
+    
+    // Performans Grafigi
+    var perfChart = null;
+    var chartColors = {
+        line: '#00d4aa',
+        fill: 'rgba(0, 212, 170, 0.08)',
+        grid: 'rgba(255, 255, 255, 0.04)',
+        text: '#5a5a7a'
+    };
+
+    function initPerformanceChart(dates, values, returns) {
+        var ctx = document.getElementById('performanceChart').getContext('2d');
+
+        if (perfChart) perfChart.destroy();
+
+        var lastReturn = returns.length > 0 ? returns[returns.length - 1] : 0;
+        var lineColor = lastReturn >= 0 ? '#00d4aa' : '#ff6b6b';
+        var fillGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        fillGradient.addColorStop(0, lastReturn >= 0 ? 'rgba(0, 212, 170, 0.15)' : 'rgba(255, 107, 107, 0.15)');
+        fillGradient.addColorStop(1, 'rgba(0, 0, 0, 0.01)');
+
+        perfChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Portfolyo Degeri ($)',
+                    data: values,
+                    borderColor: lineColor,
+                    backgroundColor: fillGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: dates.length > 30 ? 0 : 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: lineColor,
+                    pointBorderColor: '#0a0a1a',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 17, 40, 0.95)',
+                        titleColor: '#e8e8f0',
+                        bodyColor: '#00d4aa',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: { size: 12, weight: '600' },
+                        bodyFont: { size: 14, weight: '700' },
+                        callbacks: {
+                            label: function(context) {
+                                var val = context.parsed.y;
+                                var ret = returns[context.dataIndex];
+                                return ['$' + val.toLocaleString('en-US', {minimumFractionDigits: 2}),
+                                        'Getiri: ' + (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%'];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: chartColors.grid, drawBorder: false },
+                        ticks: {
+                            color: chartColors.text,
+                            font: { size: 10, weight: '500' },
+                            maxRotation: 0,
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        grid: { color: chartColors.grid, drawBorder: false },
+                        ticks: {
+                            color: chartColors.text,
+                            font: { size: 10, weight: '500' },
+                            callback: function(val) { return '$' + val.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function formatChartDate(dateString, period) {
+        var d = new Date(dateString);
+        if (isNaN(d)) return dateString;
+
+        var hours = d.getHours().toString().padStart(2, '0');
+        var mins = d.getMinutes().toString().padStart(2, '0');
+        var day = d.getDate();
+        var monthNames = ["Oca", "Sub", "Mar", "Nis", "May", "Haz", "Tem", "Agu", "Eyl", "Eki", "Kas", "Ara"];
+        var month = monthNames[d.getMonth()];
+        var year = d.getFullYear();
+
+        if (period === '1D') {
+            return hours + ':' + mins;
+        } else if (period === '1W' || period === '1M') {
+            return day + ' ' + month;
+        } else if (period === '3M' || period === '6M' || period === '1Y' || period === 'YTD') {
+            return month + ' ' + year;
+        } else {
+            return month + ' ' + year;
+        }
+    }
+
+    function loadChartData(period) {
+        fetch('/api/performance/chart?period=' + period)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.dates && data.dates.length > 0) {
+                    var formattedDates = data.dates.map(function(d) { return formatChartDate(d, period); });
+                    initPerformanceChart(formattedDates, data.values, data.returns);
+                } else {
+                    initPerformanceChart(['Bugun'], [0], [0]);
+                }
+            })
+            .catch(function() {
+                initPerformanceChart(['Bugun'], [0], [0]);
+            });
+    }
+
+    // Periyot butonlari
+    var periodBtns = document.querySelectorAll('.period-btn');
+    for (var i = 0; i < periodBtns.length; i++) {
+        periodBtns[i].addEventListener('click', function() {
+            var allBtns = document.querySelectorAll('.period-btn');
+            for (var j = 0; j < allBtns.length; j++) { allBtns[j].classList.remove('active'); }
+            this.classList.add('active');
+            var period = this.getAttribute('data-period');
+            loadChartData(period);
+
+            // Breakdown guncelle
+            fetch('/api/performance/composite?period=' + period)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    updateBreakdown(data);
+                });
+        });
+    }
+
+    function updateBreakdown(data) {
+        var list = document.getElementById('breakdownList');
+        if (!list || !data.breakdown) return;
+
+        var colors = ['#00d4aa', '#6c5ce7', '#ffa726', '#4ecdc4', '#fd79a8', '#ffd93d'];
+        var html = '';
+        for (var i = 0; i < data.breakdown.length; i++) {
+            var item = data.breakdown[i];
+            var perfClass = item.performance >= 0 ? 'positive' : 'negative';
+            var perfSign = item.performance >= 0 ? '+' : '';
+            var weightText = item.weight ? 'Agirlik: %' + item.weight.toFixed(1) : '';
+            html += '<div class="breakdown-item">' +
+                '<div class="info">' +
+                '<span class="breakdown-dot" style="background:' + colors[i % colors.length] + '"></span>' +
+                '<div>' +
+                '<div class="breakdown-name">' + item.name + '</div>' +
+                '<div class="breakdown-weight">' + weightText + '</div>' +
+                '</div></div>' +
+                '<div class="breakdown-perf ' + perfClass + '">' + perfSign + item.performance.toFixed(2) + '%</div>' +
+                '</div>';
+        }
+        list.innerHTML = html;
+    }
+
+    // Dagilim (Doughnut) Grafigi
+    function loadAllocationChart() {
+        fetch('/api/allocation')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.items || data.items.length === 0) return;
+
+                var colors = ['#00d4aa', '#6c5ce7', '#ffa726', '#4ecdc4', '#fd79a8', '#ffd93d', '#74b9ff', '#a29bfe'];
+                var ctx = document.getElementById('allocationChart');
+                if (!ctx) return;
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.items.map(function(i) { return i.name; }),
+                        datasets: [{
+                            data: data.items.map(function(i) { return i.valueUsd; }),
+                            backgroundColor: colors.slice(0, data.items.length),
+                            borderColor: '#0a0a1a',
+                            borderWidth: 3,
+                            hoverBorderWidth: 0,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '65%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(17, 17, 40, 0.95)',
+                                titleColor: '#e8e8f0',
+                                bodyColor: '#00d4aa',
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1,
+                                padding: 12,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(ctx2) {
+                                        var val = ctx2.parsed;
+                                        var total = ctx2.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                        var pct = ((val / total) * 100).toFixed(1);
+                                        return '$' + val.toLocaleString('en-US', {minimumFractionDigits: 2}) + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Legend
+                var legend = document.getElementById('allocationLegend');
+                if (legend) {
+                    var legendHtml = '';
+                    for (var i = 0; i < data.items.length; i++) {
+                        var item = data.items[i];
+                        legendHtml += '<div style="display:flex;align-items:center;gap:10px">' +
+                            '<span style="width:12px;height:12px;border-radius:50%;background:' + colors[i % colors.length] + ';flex-shrink:0"></span>' +
+                            '<div>' +
+                            '<div style="font-size:13px;font-weight:600;color:#e8e8f0">' + item.name + '</div>' +
+                            '<div style="font-size:11px;color:#5a5a7a">$' + item.valueUsd.toFixed(2) + ' - ' + item.percentage.toFixed(1) + '%</div>' +
+                            '</div></div>';
+                    }
+                    legend.innerHTML = legendHtml;
+                }
+            });
+    }
+
+    // Modal click-outside-to-close
+    var overlays = document.querySelectorAll('.modal-overlay');
+    for (var k = 0; k < overlays.length; k++) {
+        overlays[k].addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+        loadChartData('1M');
+        loadAllocationChart();
+    });
+</script>
+
 </body>
 </html>

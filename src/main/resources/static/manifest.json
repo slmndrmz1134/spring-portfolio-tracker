@@ -1,0 +1,21 @@
+{
+  "name": "Portfolio Tracker Pro",
+  "short_name": "Portfolio",
+  "description": "Profesyonel hisse, fon ve varlık takip uygulaması",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#00d4aa",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwZDRhYSI+PHBhdGggZD0iTTMgM3YxOGgxOFYzaC0xOHptNCAxNGgtMnYtNGgydjR6bTQgMGgtMnYtOGgydjh6bTQgMGgtMnYtMTJoMnYxMnoiLz48L3N2Zz4=",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzAwZDRhYSI+PHBhdGggZD0iTTMgM3YxOGgxOFYzaC0xOHptNCAxNGgtMnYtNGgydjR6bTQgMGgtMnYtOGgydjh6bTQgMGgtMnYtMTJoMnYxMnoiLz48L3N2Zz4=",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
